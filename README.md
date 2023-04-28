@@ -1,2 +1,2 @@
 # unblink
-A Python code that automatically detects and replaces closed or blinked eyes in photos.
+Python code that automatically detects and replaces closed or blinked eyes in images.
