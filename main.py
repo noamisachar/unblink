@@ -7,6 +7,7 @@ parser.add_argument("--source-images-folder", help="Folder with images to use as
 parser.add_argument("--target-image", help="Image in which to replace closed eyes", required=True)
 parser.add_argument("--debug", help="Enable debug output", action=argparse.BooleanOptionalAction)
 
+
 def main():
     args = parser.parse_args()
     target_image_path = Path(args.target_image)
