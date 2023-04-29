@@ -1,5 +1,6 @@
-from src import selector
+from src import selector, replacer
 import argparse
+import matplotlib.pyplot as plt
 from pathlib import Path
 
 parser = argparse.ArgumentParser(description="unblink: replace closed eyes in images")
@@ -14,10 +15,12 @@ def main():
     debug = args.debug
 
     source_images, target_image = selector.load_images(source_image_dir, target_image_path, debug)
-    target_eyes = selector.get_eyes_from_image(target_image)
-    source_eyes = [selector.get_eyes_from_image(image) for image in source_images]
-    replacements = selector.compute_replacements(target_eyes, source_eyes)
-    print(replacements)
+    target_face_landmarks, target_eyes = selector.get_eyes_from_image(target_image)
+    source_eyes = [selector.get_eyes_from_image(image)[1] for image in source_images]
+    source_index_to_replace_with = selector.compute_replacements(source_eyes)
+    blend = replacer.replace(source_images[source_index_to_replace_with], target_image, target_face_landmarks)
+    plt.imshow(blend)
+    plt.show()
 
 
 if __name__ == '__main__':
