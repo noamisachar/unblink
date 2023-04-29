@@ -4,15 +4,14 @@ import dlib
 from imutils import face_utils
 from scipy.spatial import distance as dist
 
-FACIAL_LANDMARK_PREDICTOR_PATH = '../models/shape_predictor.dat'
+
 MINIMUM_EAR = 0.2
 FACE_DETECTOR = dlib.get_frontal_face_detector()
-LANDMARK_FINDER = dlib.shape_predictor(FACIAL_LANDMARK_PREDICTOR_PATH)
 LEFT_EYE_START, LEFT_EYE_END = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
 RIGHT_EYE_START, RIGHT_EYE_END = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
 
 
-def replace(source_image, target_image, target_face_landmarks):
+def replace(source_image, target_image, target_face_landmarks, facial_landmark_predictor):
     """
     Replaces the eyes in the target image with the eyes from the source image.
     The source image should contain one face only, with open eyes.
@@ -20,18 +19,20 @@ def replace(source_image, target_image, target_face_landmarks):
     @param source_image: The source image containing the replacement eyes.
     @param target_image: The target image to replace the eyes in.
     @param target_face_landmarks: The facial landmarks of the face to replace in the target image.
+    @param facial_landmark_predictor: The model predicting locations of faces and facial features.
     :return: The blended image with the replaced eyes.
     """
-    replacement_image = match_face_size(source_image=source_image, target_face_landmarks=target_face_landmarks)
+    replacement_image = match_face_size(source_image=source_image, target_face_landmarks=target_face_landmarks,
+                                        facial_landmark_predictor=facial_landmark_predictor)
     replacement_face = FACE_DETECTOR(replacement_image, 0)[0]
-    replacement_face_landmarks = face_utils.shape_to_np(LANDMARK_FINDER(replacement_image, replacement_face))
+    replacement_face_landmarks = face_utils.shape_to_np(facial_landmark_predictor(replacement_image, replacement_face))
     replacement_eyes = {
-        'left': replacement_face_landmarks[LEFT_EYE_START, LEFT_EYE_END],
-        'right': replacement_face_landmarks[RIGHT_EYE_START, RIGHT_EYE_END]
+        'left': replacement_face_landmarks[LEFT_EYE_START:LEFT_EYE_END],
+        'right': replacement_face_landmarks[RIGHT_EYE_START:RIGHT_EYE_END]
     }
     target_eyes = {
-        'left': target_face_landmarks[LEFT_EYE_START, LEFT_EYE_END],
-        'right': target_face_landmarks[RIGHT_EYE_START, RIGHT_EYE_END]
+        'left': target_face_landmarks[LEFT_EYE_START:LEFT_EYE_END],
+        'right': target_face_landmarks[RIGHT_EYE_START:RIGHT_EYE_END]
     }
     replacement_surrounding_coordinates = {
         'left': [replacement_face_landmarks[23], replacement_face_landmarks[24], replacement_face_landmarks[27]],
@@ -74,19 +75,20 @@ def replace(source_image, target_image, target_face_landmarks):
     return blended_image
 
 
-def match_face_size(source_image, target_face_landmarks):
+def match_face_size(source_image, target_face_landmarks, facial_landmark_predictor):
     """
     This function matches the size of the face in the source image to the size of the face in the target image
     and returns the resized source image.
 
     @param source_image: The source image containing the replacement eyes.
     @param target_face_landmarks: The facial landmarks of the face to replace in the target image.
+    @param facial_landmark_predictor: The model predicting locations of faces and facial features.
     :return: The source image resized so the face matches the size of the face in the target image.
     """
     source_faces = FACE_DETECTOR(source_image, 0)
     if len(source_faces) != 1:
         raise ValueError('Source images need to have a single face in them.')
-    source_face_landmarks = face_utils.shape_to_np(LANDMARK_FINDER(source_image, source_faces[0]))
+    source_face_landmarks = face_utils.shape_to_np(facial_landmark_predictor(source_image, source_faces[0]))
     source_face_size = dist.euclidean(source_face_landmarks[0], source_face_landmarks[16])
     target_face_size = dist.euclidean(target_face_landmarks[0], target_face_landmarks[16])
     scaling_factor = target_face_size / source_face_size
