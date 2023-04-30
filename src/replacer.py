@@ -24,7 +24,7 @@ def replace(source_image, target_image, target_face_landmarks, facial_landmark_p
     """
     replacement_image = match_face_size(source_image=source_image, target_face_landmarks=target_face_landmarks,
                                         facial_landmark_predictor=facial_landmark_predictor)
-    replacement_face = FACE_DETECTOR(replacement_image, 0)[0]
+    replacement_face = FACE_DETECTOR(replacement_image, 1)[0]
     replacement_face_landmarks = face_utils.shape_to_np(facial_landmark_predictor(replacement_image, replacement_face))
     replacement_eyes = {
         'left': replacement_face_landmarks[LEFT_EYE_START:LEFT_EYE_END],
@@ -85,9 +85,9 @@ def match_face_size(source_image, target_face_landmarks, facial_landmark_predict
     @param facial_landmark_predictor: The model predicting locations of faces and facial features.
     :return: The source image resized so the face matches the size of the face in the target image.
     """
-    source_faces = FACE_DETECTOR(source_image, 0)
+    source_faces = FACE_DETECTOR(source_image, 1)
     if len(source_faces) != 1:
-        raise ValueError('Source images need to have a single face in them.')
+        raise ValueError(f'Source images need to have a single face in them. Faces detected: {len(source_faces)}')
     source_face_landmarks = face_utils.shape_to_np(facial_landmark_predictor(source_image, source_faces[0]))
     source_face_size = dist.euclidean(source_face_landmarks[0], source_face_landmarks[16])
     target_face_size = dist.euclidean(target_face_landmarks[0], target_face_landmarks[16])

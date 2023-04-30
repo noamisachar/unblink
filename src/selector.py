@@ -1,7 +1,6 @@
 import argparse, dlib, os, cv2, matplotlib.pyplot as plt, numpy as np
 from imutils import face_utils
 from scipy.spatial import distance as dist
-from . import replacer
 
 FACIAL_LANDMARK_PREDICTOR = "models/shape_predictor.dat"  
 MINIMUM_EAR = 0.2
@@ -24,11 +23,9 @@ def centroid(eye):
 
 def load_images(source_image_dir, target_image_path, debug=False):
     if not target_image_path.exists():
-        print("The target image doesn't exist")
-        raise SystemExit(1)
+        return ValueError("The target image doesn't exist")
     if not source_image_dir.exists():
-        print("The source image directory doesn't exist")
-        raise SystemExit(1)
+        return ValueError("The source image directory doesn't exist")
     
     source_images = []
     for image in source_image_dir.iterdir():
@@ -39,8 +36,7 @@ def load_images(source_image_dir, target_image_path, debug=False):
         source_images.append(image)
         
     if len(source_images) == 0:
-        print("Source image directory is empty")
-        raise SystemExit(1)
+        return ValueError("Source image directory is empty")
     
     target_image = cv2.cvtColor(cv2.imread(str(target_image_path)), cv2.COLOR_BGR2GRAY)
     if debug:
@@ -54,9 +50,12 @@ def load_images(source_image_dir, target_image_path, debug=False):
 # classify each eye as open or closed. Return two objects: the left eye and the
 # right eye.
 def get_eyes_from_image(image):
-    faces = face_detector(image, 0)
-    # For now only support if and only if there is one face in the image.
-    assert(len(faces) == 1)
+    faces = face_detector(image, 1)
+
+    # We expect to have exactly one face in this function
+    if len(faces) != 1:
+        return (None, ())
+
     face_landmarks = landmark_finder(image, faces[0])
     face_landmarks = face_utils.shape_to_np(face_landmarks)
     left_eye = face_landmarks[left_eye_start:left_eye_end]
@@ -96,62 +95,44 @@ def get_eyes_from_image(image):
     
     right_eye = {
         "kind": "right",
-        "EAR": left_EAR,
+        "EAR": right_EAR,
         "status": "closed" if right_EAR < MINIMUM_EAR else "open",
         "centroid": centroid(right_eye),
         "coordinates": right_eye,
     }
     
-    return left_eye, right_eye
+    return face_landmarks, (left_eye, right_eye)
 
+# Accept an image and locate the eyes within it. Compute eye coordinates and
+# classify each eye as open or closed. Return two objects for every detected
+# face: the left eye and the right eye.
+def get_all_faces_and_eyes_from_image(image):
+    faces = face_detector(image, 1)
+    results = []
 
-def compute_replacements(target_eyes, source_eyes):
-    replacements = []
-    for i, target_eye in enumerate(target_eyes):
-        if target_eye['status'] == 'open':
+    for face in faces:
+        cropped_image = get_cropped_face(image, face, padding=60)
+        _, eyes = get_eyes_from_image(cropped_image)
+
+        if len(eyes) != 2:
             continue
-        
-        max_source_EAR = -1
-        source_eye = None
-        source_image_index = -1
-        for j, candidate_eyes in enumerate(source_eyes):
-            candidate_eye = candidate_eyes[i]
-            if candidate_eye['status'] == 'open' and candidate_eye['EAR'] > max_source_EAR:
-                max_source_EAR = candidate_eye['EAR']
-                source_eye = candidate_eye
-                source_image_index = j
-        
-        if source_eye is None:
-            # We have nothing to replace this particular eye with, continue.
-            continue
-        
-        replacements.append({
-            'target_eye': target_eye,
-            'source_image_index': source_image_index,
-            'source_eye': source_eye
-        })
 
-    return replacements
+        results.append((cropped_image, eyes))
 
+    return results
 
-def main():
-    args = parser.parse_args()
-    target_image_path = Path(args.target_image)
-    source_image_dir = Path(args.source_images_folder)
-    debug = args.debug
-    faceDetector = dlib.get_frontal_face_detector()
-    landmarkFinder = dlib.shape_predictor(FACIAL_LANDMARK_PREDICTOR)
-    (leftEyeStart, leftEyeEnd) = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
-    (rightEyeStart, rightEyeEnd) = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
-    source_images, target_image = load_images(source_image_dir, target_image_path, debug)
-    
-    target_eyes = get_eyes_from_image(target_image)
-    source_eyes = [get_eyes_from_image(image) for image in source_images]
-    
-    replacements = compute_replacements(target_eyes, source_eyes)
-    print(replacements)
-    
+def get_cropped_face(image, face_rect, padding=10):
+    x, y, w, h = face_utils.rect_to_bb(face_rect)
 
-if __name__ == "__main__":
-    main()
+    x_min = max(0, x - padding)
+    x_max = min(x + w + padding, image.shape[0])
+    y_min = max(0, y - padding)
+    y_max = min(y + h + padding, image.shape[1])
     
+    return image[x_min:x_max, y_min:y_max]
+
+def compute_replacements(source_eyes):
+    if len(source_eyes) < 1:
+        raise ValueError("source_eyes length can't be less than 1")
+    
+    return sorted(range(len(source_eyes)), key=lambda k: 1 / (source_eyes[k][0]['EAR'] * source_eyes[k][1]['EAR']))[0]
