@@ -14,6 +14,22 @@ RIGHT_EYE_START, RIGHT_EYE_END = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
 
 def replace(source_image, target_image, target_face_landmarks):
     """
+    Replaces all closed eyes in the target image with the eyes from the source image.
+    The source image should contain one face only, with open eyes.
+
+    @param source_image: The source image containing the replacement eyes.
+    @param target_image: The target image to replace the eyes in.
+    @param target_face_landmarks: The facial landmarks of the face to replace in the target image.
+    :return: The blended image with the replaced eyes.
+    """
+    print(f"Attempting to replace eyes in {len(target_face_landmarks)} faces")
+    for landmark in target_face_landmarks:
+        target_image = replace_inner(source_image, target_image, landmark)
+    return target_image
+
+
+def replace_inner(source_image, target_image, target_face_landmarks):
+    """
     Replaces the eyes in the target image with the eyes from the source image.
     The source image should contain one face only, with open eyes.
 

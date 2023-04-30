@@ -121,6 +121,14 @@ def get_all_faces_and_eyes_from_image(image):
 
     return results
 
+
+def get_faces_from_image(image):
+    return [
+        face_utils.shape_to_np(landmark_finder(image, face))
+        for face in face_detector(image, 1)
+    ]
+
+
 def get_cropped_face(image, face_rect, padding=10):
     x, y, w, h = face_utils.rect_to_bb(face_rect)
 
@@ -128,7 +136,7 @@ def get_cropped_face(image, face_rect, padding=10):
     x_max = min(x + w + padding, image.shape[0])
     y_min = max(0, y - padding)
     y_max = min(y + h + padding, image.shape[1])
-    
+
     return image[x_min:x_max, y_min:y_max]
 
 def compute_replacements(source_eyes):
