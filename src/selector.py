@@ -112,12 +112,12 @@ def get_all_faces_and_eyes_from_image(image):
 
     for face in faces:
         cropped_image = get_cropped_face(image, face, padding=60)
-        _, eyes = get_eyes_from_image(cropped_image)
+        face_landmarks, eyes = get_eyes_from_image(cropped_image)
 
         if len(eyes) != 2:
             continue
 
-        results.append((cropped_image, eyes))
+        results.append((cropped_image, face_landmarks, eyes))
 
     return results
 
