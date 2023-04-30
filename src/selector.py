@@ -1,11 +1,10 @@
 import argparse, dlib, os, cv2, matplotlib.pyplot as plt, numpy as np
 from imutils import face_utils
 from scipy.spatial import distance as dist
+import face_recognition
 
-FACIAL_LANDMARK_PREDICTOR = "models/shape_predictor.dat"  
 MINIMUM_EAR = 0.2
 face_detector = dlib.get_frontal_face_detector()
-landmark_finder = dlib.shape_predictor(FACIAL_LANDMARK_PREDICTOR)
 (left_eye_start, left_eye_end) = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
 (right_eye_start, right_eye_end) = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
 
@@ -49,14 +48,14 @@ def load_images(source_image_dir, target_image_path, debug=False):
 # Accept an image and locate the eyes within it. Compute eye coordinates and
 # classify each eye as open or closed. Return two objects: the left eye and the
 # right eye.
-def get_eyes_from_image(image):
+def get_eyes_from_image(image, facial_landmark_predictor):
     faces = face_detector(image, 1)
 
     # We expect to have exactly one face in this function
     if len(faces) != 1:
         return (None, ())
 
-    face_landmarks = landmark_finder(image, faces[0])
+    face_landmarks = facial_landmark_predictor(image, faces[0])
     face_landmarks = face_utils.shape_to_np(face_landmarks)
     left_eye = face_landmarks[left_eye_start:left_eye_end]
     right_eye = face_landmarks[right_eye_start:right_eye_end]
@@ -106,18 +105,19 @@ def get_eyes_from_image(image):
 # Accept an image and locate the eyes within it. Compute eye coordinates and
 # classify each eye as open or closed. Return two objects for every detected
 # face: the left eye and the right eye.
-def get_all_faces_and_eyes_from_image(image):
+def get_all_faces_and_eyes_from_image(image, facial_landmark_predictor):
     faces = face_detector(image, 1)
     results = []
 
     for face in faces:
-        cropped_image = get_cropped_face(image, face, padding=60)
-        face_landmarks, eyes = get_eyes_from_image(cropped_image)
-
+        cropped_image = get_cropped_face(image, face, padding_pct=10)
+        face_landmarks, eyes = get_eyes_from_image(cropped_image, facial_landmark_predictor)
+        bb = face_utils.rect_to_bb(face)
+        face_embedding = face_recognition.face_encodings(cv2.cvtColor(cropped_image, cv2.COLOR_GRAY2RGB))
         if len(eyes) != 2:
             continue
 
-        results.append((cropped_image, face_landmarks, eyes))
+        results.append((cropped_image, face_landmarks, face_embedding, eyes))
 
     return results
 
@@ -129,9 +129,10 @@ def get_faces_from_image(image):
     ]
 
 
-def get_cropped_face(image, face_rect, padding=10):
+def get_cropped_face(image, face_rect, padding_pct=10):
     x, y, w, h = face_utils.rect_to_bb(face_rect)
-
+    padding = padding_pct * max(w, h)
+    
     x_min = max(0, x - padding)
     x_max = min(x + w + padding, image.shape[0])
     y_min = max(0, y - padding)
@@ -139,8 +140,10 @@ def get_cropped_face(image, face_rect, padding=10):
 
     return image[x_min:x_max, y_min:y_max]
 
-def compute_replacements(source_eyes):
-    if len(source_eyes) < 1:
-        raise ValueError("source_eyes length can't be less than 1")
-    
-    return sorted(range(len(source_eyes)), key=lambda k: 1 / (source_eyes[k][0]['EAR'] * source_eyes[k][1]['EAR']))[0]
+def compute_replacements(target_face_landmarks, eye_candidates):
+    source_embeddings = np.array([np.squeeze(source_embedding) for _, _, source_embedding, _ in eye_candidates])
+    source_images = []
+    for _, _, target_embedding, _ in target_face_landmarks:
+        res = face_recognition.api.face_distance(source_embeddings, np.squeeze(np.array(target_embedding)))
+        source_images.append(eye_candidates[np.argmax(res)][0])
+    return source_images
