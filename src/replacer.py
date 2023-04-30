@@ -23,15 +23,15 @@ def replace(source_image, target_image, target_face_landmarks):
     :return: The blended image with the replaced eyes.
     """
     replacement_image = match_face_size(source_image=source_image, target_face_landmarks=target_face_landmarks)
-    replacement_face = FACE_DETECTOR(replacement_image, 0)[0]
+    replacement_face = FACE_DETECTOR(replacement_image, 1)[0]
     replacement_face_landmarks = face_utils.shape_to_np(LANDMARK_FINDER(replacement_image, replacement_face))
     replacement_eyes = {
-        'left': replacement_face_landmarks[LEFT_EYE_START, LEFT_EYE_END],
-        'right': replacement_face_landmarks[RIGHT_EYE_START, RIGHT_EYE_END]
+        'left': replacement_face_landmarks[LEFT_EYE_START:LEFT_EYE_END],
+        'right': replacement_face_landmarks[RIGHT_EYE_START:RIGHT_EYE_END]
     }
     target_eyes = {
-        'left': target_face_landmarks[LEFT_EYE_START, LEFT_EYE_END],
-        'right': target_face_landmarks[RIGHT_EYE_START, RIGHT_EYE_END]
+        'left': target_face_landmarks[LEFT_EYE_START:LEFT_EYE_END],
+        'right': target_face_landmarks[RIGHT_EYE_START:RIGHT_EYE_END]
     }
     replacement_surrounding_coordinates = {
         'left': [replacement_face_landmarks[23], replacement_face_landmarks[24], replacement_face_landmarks[27]],
@@ -83,9 +83,9 @@ def match_face_size(source_image, target_face_landmarks):
     @param target_face_landmarks: The facial landmarks of the face to replace in the target image.
     :return: The source image resized so the face matches the size of the face in the target image.
     """
-    source_faces = FACE_DETECTOR(source_image, 0)
+    source_faces = FACE_DETECTOR(source_image, 1)
     if len(source_faces) != 1:
-        raise ValueError('Source images need to have a single face in them.')
+        raise ValueError(f'Source images need to have a single face in them. Faces detected: {len(source_faces)}')
     source_face_landmarks = face_utils.shape_to_np(LANDMARK_FINDER(source_image, source_faces[0]))
     source_face_size = dist.euclidean(source_face_landmarks[0], source_face_landmarks[16])
     target_face_size = dist.euclidean(target_face_landmarks[0], target_face_landmarks[16])
