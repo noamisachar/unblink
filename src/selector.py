@@ -50,10 +50,12 @@ def load_images(source_image_dir, target_image_path, debug=False):
 # classify each eye as open or closed. Return two objects: the left eye and the
 # right eye.
 def get_eyes_from_image(image):
-    faces = face_detector(image, 0)
+    faces = face_detector(image, 1)
 
-    # For now only support if and only if there is one face in the image.
-    assert(len(faces) == 1)
+    # We expect to have exactly one face in this function
+    if len(faces) != 1:
+        return (None, ())
+
     face_landmarks = landmark_finder(image, faces[0])
     face_landmarks = face_utils.shape_to_np(face_landmarks)
     left_eye = face_landmarks[left_eye_start:left_eye_end]
@@ -101,6 +103,33 @@ def get_eyes_from_image(image):
     
     return face_landmarks, (left_eye, right_eye)
 
+# Accept an image and locate the eyes within it. Compute eye coordinates and
+# classify each eye as open or closed. Return two objects for every detected
+# face: the left eye and the right eye.
+def get_all_faces_and_eyes_from_image(image):
+    faces = face_detector(image, 1)
+    results = []
+
+    for face in faces:
+        cropped_image = get_cropped_face(image, face, padding=60)
+        _, eyes = get_eyes_from_image(cropped_image)
+
+        if len(eyes) != 2:
+            continue
+
+        results.append((cropped_image, eyes))
+
+    return results
+
+def get_cropped_face(image, face_rect, padding=10):
+    x, y, w, h = face_utils.rect_to_bb(face_rect)
+
+    x_min = max(0, x - padding)
+    x_max = min(x + w + padding, image.shape[0])
+    y_min = max(0, y - padding)
+    y_max = min(y + h + padding, image.shape[1])
+    
+    return image[x_min:x_max, y_min:y_max]
 
 def compute_replacements(source_eyes):
     if len(source_eyes) < 1:

@@ -16,9 +16,15 @@ def main():
 
     source_images, target_image = selector.load_images(source_image_dir, target_image_path, debug)
     target_face_landmarks, target_eyes = selector.get_eyes_from_image(target_image)
-    source_eyes = [selector.get_eyes_from_image(image)[1] for image in source_images]
-    source_index_to_replace_with = selector.compute_replacements(source_eyes)
-    blend = replacer.replace(source_images[source_index_to_replace_with], target_image, target_face_landmarks)
+
+    eye_candidates = []
+    for image in source_images:
+        detected_faces_and_eyes = selector.get_all_faces_and_eyes_from_image(image)
+        eye_candidates.extend(detected_faces_and_eyes)
+
+    source_index_to_replace_with = selector.compute_replacements([eyes for _, eyes in eye_candidates])
+    print(f"Selected Image #{source_index_to_replace_with} out of {len(eye_candidates)} images")
+    blend = replacer.replace(eye_candidates[source_index_to_replace_with][0], target_image, target_face_landmarks)
     plt.imshow(blend)
     plt.show()
 
