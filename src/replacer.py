@@ -16,18 +16,22 @@ def replace(source_images, target_image, target_face_landmarks, facial_landmark_
     Replaces all closed eyes in the target image with the eyes from the source image.
     The source image should contain one face only, with open eyes.
 
-    @param source_image: The source image containing the replacement eyes.
+    @param source_images: The source images containing the replacement eyes.
     @param target_image: The target image to replace the eyes in.
     @param target_face_landmarks: The facial landmarks of the face to replace in the target image.
+    @param facial_landmark_predictor: The model predicting locations of faces and facial features.
     :return: The blended image with the replaced eyes.
     """
     print(f"Attempting to replace eyes in {len(target_face_landmarks)} faces")
-    for [_, landmark, embedding, eyes], source_image in zip(target_face_landmarks, source_images):
-        target_image = replace_inner(source_image, target_image, eyes, landmark, facial_landmark_predictor)
+    for [_, landmark, _, eyes], source_image in zip(target_face_landmarks, source_images):
+        # If the target eyes aren't closed, then the function call is a no-op.
+        if eyes[0]['EAR'] > MINIMUM_EAR and eyes[1]['EAR'] > MINIMUM_EAR:
+            return target_image
+        target_image = replace_inner(source_image, target_image, landmark, facial_landmark_predictor)
     return target_image
 
 
-def replace_inner(source_image, target_image, target_eyes, target_face_landmarks, facial_landmark_predictor):
+def replace_inner(source_image, target_image, target_face_landmarks, facial_landmark_predictor):
     """
     Replaces the eyes in the target image with the eyes from the source image.
     The source image should contain one face only, with open eyes.
@@ -38,14 +42,6 @@ def replace_inner(source_image, target_image, target_eyes, target_face_landmarks
     @param facial_landmark_predictor: The model predicting locations of faces and facial features.
     :return: The blended image with the replaced eyes.
     """
-    # If the target eyes aren't closed, then the function call is a no-op.
-    if target_eyes[0]['EAR'] > MINIMUM_EAR and target_eyes[1]['EAR'] > MINIMUM_EAR:
-        return target_image
-    else:
-        target_eyes = {
-            'left': target_eyes[0]['coordinates'],
-            'right': target_eyes[1]['coordinates'],
-        }
 
     replacement_image = match_face_size(source_image=source_image, target_face_landmarks=target_face_landmarks,
                                         facial_landmark_predictor=facial_landmark_predictor)
@@ -54,6 +50,10 @@ def replace_inner(source_image, target_image, target_eyes, target_face_landmarks
     replacement_eyes = {
         'left': replacement_face_landmarks[LEFT_EYE_START:LEFT_EYE_END],
         'right': replacement_face_landmarks[RIGHT_EYE_START:RIGHT_EYE_END]
+    }
+    target_eyes = {
+        'left': target_face_landmarks[LEFT_EYE_START:LEFT_EYE_END],
+        'right': target_face_landmarks[RIGHT_EYE_START:RIGHT_EYE_END]
     }
     replacement_surrounding_coordinates = {
         'left': [replacement_face_landmarks[23], replacement_face_landmarks[24], replacement_face_landmarks[27]],

@@ -1,9 +1,10 @@
+import cv2
+
 from src import selector, replacer
 import argparse
 import matplotlib.pyplot as plt
 from pathlib import Path
 import dlib
-import face_recognition
 
 FACE_DETECTOR_MODEL = "models/mmod_human_face_detector.dat"
 FACIAL_LANDMARK_PREDICTOR = "models/shape_predictor.dat"
@@ -13,6 +14,7 @@ parser = argparse.ArgumentParser(description="unblink: replace closed eyes in im
 parser.add_argument("--replacement-path", "-r", help="Folder with images to use as eye sources", required=True)
 parser.add_argument("--target-path", "-t", help="Image in which to replace closed eyes", required=True)
 parser.add_argument("--debug", "-d", help="Enable debug output", action=argparse.BooleanOptionalAction)
+
 
 def main():
     args = parser.parse_args()
@@ -29,7 +31,6 @@ def main():
         detected_faces_and_eyes = selector.get_all_faces_and_eyes_from_image(image, facial_landmark_predictor)
         eye_candidates.extend(detected_faces_and_eyes)
 
-    blend = None
     target_face_landmarks = selector.get_all_faces_and_eyes_from_image(target_image, facial_landmark_predictor)
     source_images_to_replace_with = selector.compute_replacements(target_face_landmarks, eye_candidates)
 
@@ -40,8 +41,10 @@ def main():
         facial_landmark_predictor
     )
 
-    plt.imshow(blend, cmap="gray")
+    plt.imshow(blend)
     plt.show()
+
+    cv2.imwrite('blend.jpg', cv2.cvtColor(blend, cv2.COLOR_RGB2BGR))
 
 
 if __name__ == '__main__':

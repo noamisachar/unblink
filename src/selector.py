@@ -28,18 +28,18 @@ def load_images(source_image_dir, target_image_path, debug=False):
     
     source_images = []
     for image in source_image_dir.iterdir():
-        image = cv2.cvtColor(cv2.imread(os.path.join(source_image_dir, image.name)), cv2.COLOR_BGR2GRAY)
+        image = cv2.cvtColor(cv2.imread(os.path.join(source_image_dir, image.name)), cv2.COLOR_BGR2RGB)
         if debug:
-            plt.imshow(image, cmap="gray")
+            plt.imshow(image)
             plt.show()
         source_images.append(image)
         
     if len(source_images) == 0:
         return ValueError("Source image directory is empty")
     
-    target_image = cv2.cvtColor(cv2.imread(str(target_image_path)), cv2.COLOR_BGR2GRAY)
+    target_image = cv2.cvtColor(cv2.imread(str(target_image_path)), cv2.COLOR_BGR2RGB)
     if debug:
-        plt.imshow(target_image, cmap="gray")
+        plt.imshow(target_image)
         plt.show()
 
     return source_images, target_image
@@ -113,7 +113,7 @@ def get_all_faces_and_eyes_from_image(image, facial_landmark_predictor):
         cropped_image = get_cropped_face(image, face, padding_pct=10)
         face_landmarks, eyes = get_eyes_from_image(cropped_image, facial_landmark_predictor)
         bb = face_utils.rect_to_bb(face)
-        face_embedding = face_recognition.face_encodings(cv2.cvtColor(cropped_image, cv2.COLOR_GRAY2RGB))
+        face_embedding = face_recognition.face_encodings(cropped_image)
         if len(eyes) != 2:
             continue
 
@@ -138,6 +138,8 @@ def get_cropped_face(image, face_rect, padding_pct=10):
     y_min = max(0, y - padding)
     y_max = min(y + h + padding, image.shape[1])
 
+    plt.imshow(image[x_min:x_max, y_min:y_max])
+    plt.show()
     return image[x_min:x_max, y_min:y_max]
 
 def compute_replacements(target_face_landmarks, eye_candidates):
