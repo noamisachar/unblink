@@ -9,7 +9,9 @@ Automatically detects and replaces closed or blinked eyes in images.
 
 ## Usage
 Run the following command from the project directory to start the program:
+
 `python main.py --target-path /path/to/target/image.jpg --replacement-path /path/to/source/images`
+
 Replace `/path/to/target/image.jpg` with the path to the image where you want to replace the eyes, and `/path/to/source/images` with the path to the folder containing the replacement eyes images.
 If you don't have any replacement images, the program will use the default images that we provided.
 
