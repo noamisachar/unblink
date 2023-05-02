@@ -1,5 +1,6 @@
 import os, cv2, matplotlib.pyplot as plt
 
+
 def load_images(source_image_dir, target_image_path, debug=False):
     if not target_image_path.exists():
         return ValueError("The target image doesn't exist")
@@ -8,7 +9,9 @@ def load_images(source_image_dir, target_image_path, debug=False):
 
     source_images = []
     for image in source_image_dir.iterdir():
-        image = cv2.cvtColor(cv2.imread(os.path.join(source_image_dir, image.name)), cv2.COLOR_BGR2RGB)
+        image = cv2.cvtColor(
+            cv2.imread(os.path.join(source_image_dir, image.name)), cv2.COLOR_BGR2RGB
+        )
         if debug:
             plt.imshow(image)
             plt.title("Loaded source image")
