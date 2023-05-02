@@ -5,7 +5,7 @@ from imutils import face_utils
 from scipy.spatial import distance as dist
 
 
-MINIMUM_EAR = 0.2
+MINIMUM_EAR = 0.21
 FACE_DETECTOR = dlib.get_frontal_face_detector()
 LEFT_EYE_START, LEFT_EYE_END = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
 RIGHT_EYE_START, RIGHT_EYE_END = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
@@ -24,9 +24,11 @@ def replace(source_images, target_image, target_face_landmarks, facial_landmark_
     """
     print(f"Attempting to replace eyes in {len(target_face_landmarks)} faces")
     for [_, landmark, _, eyes], source_image in zip(target_face_landmarks, source_images):
+        print(eyes)
         # If the target eyes aren't closed, then the function call is a no-op.
         if eyes[0]['EAR'] > MINIMUM_EAR and eyes[1]['EAR'] > MINIMUM_EAR:
-            return target_image
+            print("skipping target")
+            continue
         target_image = replace_inner(source_image, target_image, landmark, facial_landmark_predictor)
     return target_image
 
@@ -68,7 +70,7 @@ def replace_inner(source_image, target_image, target_face_landmarks, facial_land
 
     if eye_aspect_ratio(replacement_eyes['left']) < MINIMUM_EAR or \
             eye_aspect_ratio(replacement_eyes['right']) < MINIMUM_EAR:
-        raise ValueError('Source images need to contain open eyes.')
+        raise ValueError('Source image needs to contain open eyes.')
 
     replacement_centroids = {
         'left': centroid(replacement_eyes['left']),
@@ -88,7 +90,6 @@ def replace_inner(source_image, target_image, target_face_landmarks, facial_land
         replacement_image, expanded_replacement_eyes['left'], replacement_centroids['left'])
     right_eye_mask = create_eye_mask(
         replacement_image, expanded_replacement_eyes['right'], replacement_centroids['right'])
-
     blended_image = cv2.seamlessClone(
         replacement_image, target_image, left_eye_mask, target_centroids['left'], cv2.NORMAL_CLONE)
     blended_image = cv2.seamlessClone(
