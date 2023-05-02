@@ -5,6 +5,7 @@ Automatically detects and replaces closed or blinked eyes in images.
 
 ## Installation
 * Clone this repository to your local machine.
+* Install dlib using [this](https://medium.com/analytics-vidhya/how-to-install-dlib-library-for-python-in-windows-10-57348ba1117f) guide.
 * Install the required dependencies by running the following command in your terminal: `pip install -r requirements.txt`
 
 ## Usage
