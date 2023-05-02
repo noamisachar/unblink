@@ -133,3 +133,7 @@ dmypy.json
 .idea/
 .DS_Store
 .idea
+
+# Research
+research/
+data/
