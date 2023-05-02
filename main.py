@@ -11,8 +11,10 @@ FACIAL_LANDMARK_PREDICTOR = "models/shape_predictor.dat"
 facial_landmark_predictor = dlib.shape_predictor(FACIAL_LANDMARK_PREDICTOR)
 
 parser = argparse.ArgumentParser(description="unblink: replace closed eyes in images")
-parser.add_argument("--replacement-path", "-r", help="Folder with images to use as eye sources", required=True)
-parser.add_argument("--target-path", "-t", help="Image in which to replace closed eyes", required=True)
+parser.add_argument("--target-path", "-t", help="Image in which to replace closed eyes",
+                    required=True)
+parser.add_argument("--replacement-path", "-r", help="Folder with images to use as eye sources",
+                    default="example/open")
 parser.add_argument("--debug", "-d", help="Enable debug output", action=argparse.BooleanOptionalAction)
 
 
