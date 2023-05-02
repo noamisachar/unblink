@@ -1,19 +1,17 @@
-import dlib, cv2, matplotlib.pyplot as plt, numpy as np
-from imutils import face_utils
-from scipy.spatial import distance as dist
-import face_recognition
 import math
+import cv2
+import face_recognition
+import matplotlib.pyplot as plt
+import numpy as np
+from imutils import face_utils
+import utils
 
-MINIMUM_EAR = 0.21
-face_detector = dlib.get_frontal_face_detector()
-(left_eye_start, left_eye_end) = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
-(right_eye_start, right_eye_end) = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
 
 # Accept an image and locate the eyes within it. Compute eye coordinates and
 # classify each eye as open or closed. Return two objects for every detected
 # face: the left eye and the right eye.
 def get_all_faces_and_eyes_from_image(image, facial_landmark_predictor, debug):
-    faces = face_detector(image, 1)
+    faces = utils.FACE_DETECTOR(image, 1)
     print("faces in get_all_faces_and_eyes_from_image ", len(faces))
 
     # No cropping required
@@ -61,7 +59,7 @@ def _get_cropped_face(image, face_rect, padding_pct=50, debug=False):
         plt.title("Cropped face")
         plt.show()
 
-        faces = face_detector(cropped_image, 1)
+        faces = utils.FACE_DETECTOR(cropped_image, 1)
         print("Faces detected in get_cropped_face cropped image version ", faces)
         copy = cropped_image.copy()
         for face in faces:
@@ -79,73 +77,41 @@ def _get_cropped_face(image, face_rect, padding_pct=50, debug=False):
 # classify each eye as open or closed. Return two objects: the left eye and the
 # right eye.
 def _get_eyes_from_image(image, facial_landmark_predictor):
-    faces = face_detector(image, 1)
+    faces = utils.FACE_DETECTOR(image, 1)
     face = None
     if len(faces) >= 1:
         face = faces[0]
     elif len(faces) == 0:
         print("No faces found in image")
-        return (None, None, ())
+        return None, None, ()
 
     face_landmarks = facial_landmark_predictor(image, face)
     face_landmarks = face_utils.shape_to_np(face_landmarks)
-    left_eye = face_landmarks[left_eye_start:left_eye_end]
-    right_eye = face_landmarks[right_eye_start:right_eye_end]
-    left_EAR = _eye_aspect_ratio(left_eye)
-    right_EAR = _eye_aspect_ratio(right_eye)
- 
-    # need to make these more robust and also for centroids
-    diff_left_1 = np.int32((face_landmarks[23] + face_landmarks[43]) / 2) - face_landmarks[43]
-    diff_left_2 = np.int32((face_landmarks[24] + face_landmarks[44]) / 2) - face_landmarks[44]
-    diff_left_3 = np.int32((face_landmarks[27] + face_landmarks[42]) / 2) - face_landmarks[42]
-    diff_right_1 = np.int32((face_landmarks[19] + face_landmarks[37]) / 2) - face_landmarks[37]
-    diff_right_2 = np.int32((face_landmarks[20] + face_landmarks[38]) / 2) - face_landmarks[38]
-    diff_right_3 = np.int32((face_landmarks[27] + face_landmarks[39]) / 2) - face_landmarks[39]
+    left_eye = face_landmarks[utils.LEFT_EYE_START:utils.LEFT_EYE_END]
+    right_eye = face_landmarks[utils.RIGHT_EYE_START:utils.RIGHT_EYE_END]
+    left_ear = utils.eye_aspect_ratio(left_eye)
+    right_ear = utils.eye_aspect_ratio(right_eye)
 
-    left_eye[0] += diff_left_3
-    left_eye[1] += diff_left_1
-    left_eye[2] += diff_left_2
-    left_eye[3] -= diff_left_3
-    left_eye[4] -= diff_left_2
-    left_eye[5] -= diff_left_1
-
-    right_eye[0] -= diff_right_3
-    right_eye[1] += diff_right_1
-    right_eye[2] += diff_right_2
-    right_eye[3] += diff_right_3
-    right_eye[4] -= diff_right_2
-    right_eye[5] -= diff_right_1
+    eyes_coordinates, surrounding_coordinates = utils.get_eyes_and_surrounding_coordinates(face_landmarks)
+    expanded_eyes_coordinates = utils.expand_eye_coordinates(eyes_coordinates, surrounding_coordinates)
 
     left_eye = {
         "kind": "left",
-        "EAR": left_EAR,
-        "status": "closed" if left_EAR < MINIMUM_EAR else "open",
-        "centroid": _centroid(left_eye),
-        "coordinates": left_eye,
+        "EAR": left_ear,
+        "status": "closed" if left_ear < utils.MINIMUM_EAR else "open",
+        "centroid": utils.centroid(left_eye),
+        "coordinates": expanded_eyes_coordinates['left'],
     }
 
     right_eye = {
         "kind": "right",
-        "EAR": right_EAR,
-        "status": "closed" if right_EAR < MINIMUM_EAR else "open",
-        "centroid": _centroid(right_eye),
-        "coordinates": right_eye,
+        "EAR": right_ear,
+        "status": "closed" if right_ear < utils.MINIMUM_EAR else "open",
+        "centroid": utils.centroid(right_eye),
+        "coordinates": expanded_eyes_coordinates['right'],
     }
 
     return face, face_landmarks, (left_eye, right_eye)
-
-
-# Compute EAR, a good indicator of whether an eye is open or closed. Source:
-# Source: https://www.mdpi.com/2079-9292/11/19/3183.
-# 
-# EAR = (|| P2 - P6 || + || P3 - P5 ||) / 2 * || P1 - P4 ||
-def _eye_aspect_ratio(eye):
-    return (dist.euclidean(eye[1], eye[5]) + dist.euclidean(eye[2], eye[4])) / (2.0 * dist.euclidean(eye[0], eye[3]))
-
-
-# Centroids are used to compute the target blending position.
-def _centroid(eye):
-    return int(sum(eye[:, 0] / len(eye[:, ]))), int(sum(eye[:, 1] / len(eye[:, ])))
 
 
 # Identify the source face which is most similar to the provided target faces

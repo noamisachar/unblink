@@ -6,9 +6,10 @@ import matplotlib.pyplot as plt
 from pathlib import Path
 import dlib
 
-FACE_DETECTOR_MODEL = "models/mmod_human_face_detector.dat"
-FACIAL_LANDMARK_PREDICTOR = "models/shape_predictor.dat"
-facial_landmark_predictor = dlib.shape_predictor(FACIAL_LANDMARK_PREDICTOR)
+
+FACIAL_LANDMARK_PREDICTOR_PATH = "models/shape_predictor.dat"
+FACIAL_LANDMARK_PREDICTOR = dlib.shape_predictor(FACIAL_LANDMARK_PREDICTOR_PATH)
+
 
 parser = argparse.ArgumentParser(description="unblink: replace closed eyes in images")
 parser.add_argument("--target-path", "-t", help="Image in which to replace closed eyes",
@@ -30,17 +31,17 @@ def main():
 
     eye_candidates = []
     for image in source_images:
-        detected_faces_and_eyes = selector.get_all_faces_and_eyes_from_image(image, facial_landmark_predictor, debug)
+        detected_faces_and_eyes = selector.get_all_faces_and_eyes_from_image(image, FACIAL_LANDMARK_PREDICTOR, debug)
         eye_candidates.extend(detected_faces_and_eyes)
 
-    target_face_landmarks = selector.get_all_faces_and_eyes_from_image(target_image, facial_landmark_predictor, debug)
+    target_face_landmarks = selector.get_all_faces_and_eyes_from_image(target_image, FACIAL_LANDMARK_PREDICTOR, debug)
     source_images_to_replace_with = selector.compute_replacements(target_face_landmarks, eye_candidates)
 
     blend = replacer.replace(
         source_images_to_replace_with,
         target_image,
         target_face_landmarks,
-        facial_landmark_predictor
+        FACIAL_LANDMARK_PREDICTOR
     )
 
     plt.imshow(blend)

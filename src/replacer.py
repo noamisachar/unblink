@@ -1,15 +1,9 @@
 import cv2
 import imutils
 import numpy as np
-import dlib
 from imutils import face_utils
 from scipy.spatial import distance as dist
-
-
-MINIMUM_EAR = 0.21
-FACE_DETECTOR = dlib.get_frontal_face_detector()
-LEFT_EYE_START, LEFT_EYE_END = face_utils.FACIAL_LANDMARKS_IDXS["left_eye"]
-RIGHT_EYE_START, RIGHT_EYE_END = face_utils.FACIAL_LANDMARKS_IDXS["right_eye"]
+import utils
 
 
 def replace(source_images, target_image, target_face_landmarks, facial_landmark_predictor):
@@ -27,7 +21,7 @@ def replace(source_images, target_image, target_face_landmarks, facial_landmark_
     for [_, landmark, _, eyes], source_image in zip(target_face_landmarks, source_images):
         print(eyes)
         # If the target eyes aren't closed, then the function call is a no-op.
-        if eyes[0]['EAR'] > MINIMUM_EAR or eyes[1]['EAR'] > MINIMUM_EAR:
+        if eyes[0]['EAR'] > utils.MINIMUM_EAR or eyes[1]['EAR'] > utils.MINIMUM_EAR:
             print("skipping target")
             continue
         target_image = replace_inner(source_image, target_image, landmark, facial_landmark_predictor)
@@ -48,43 +42,35 @@ def replace_inner(source_image, target_image, target_face_landmarks, facial_land
 
     replacement_image = match_face_size(source_image=source_image, target_face_landmarks=target_face_landmarks,
                                         facial_landmark_predictor=facial_landmark_predictor)
-    replacement_face = FACE_DETECTOR(replacement_image, 1)[0]
+    replacement_face = utils.FACE_DETECTOR(replacement_image, 1)[0]
     replacement_face_landmarks = face_utils.shape_to_np(facial_landmark_predictor(replacement_image, replacement_face))
-    replacement_eyes = {
-        'left': replacement_face_landmarks[LEFT_EYE_START:LEFT_EYE_END],
-        'right': replacement_face_landmarks[RIGHT_EYE_START:RIGHT_EYE_END]
-    }
-    target_eyes = {
-        'left': target_face_landmarks[LEFT_EYE_START:LEFT_EYE_END],
-        'right': target_face_landmarks[RIGHT_EYE_START:RIGHT_EYE_END]
-    }
-    replacement_surrounding_coordinates = {
-        'left': [replacement_face_landmarks[23], replacement_face_landmarks[24], replacement_face_landmarks[27]],
-        'right': [replacement_face_landmarks[19], replacement_face_landmarks[20], replacement_face_landmarks[27]]
-    }
-    target_surrounding_coordinates = {
-        'left': [target_face_landmarks[23], target_face_landmarks[24], target_face_landmarks[27]],
-        'right': [target_face_landmarks[19], target_face_landmarks[20], target_face_landmarks[27]]
-    }
-    expanded_replacement_eyes = expand_eye_coordinates(eyes_coordinates=replacement_eyes,
-                                                       surrounding_coordinates=replacement_surrounding_coordinates)
+    replacement_eyes, replacement_surrounding_coordinates = utils.get_eyes_and_surrounding_coordinates(
+        replacement_face_landmarks)
+    target_eyes, target_surrounding_coordinates = utils.get_eyes_and_surrounding_coordinates(
+        target_face_landmarks)
+    expanded_replacement_eyes = utils.expand_eye_coordinates(
+        eyes_coordinates=replacement_eyes, surrounding_coordinates=replacement_surrounding_coordinates)
 
-    if eye_aspect_ratio(replacement_eyes['left']) < MINIMUM_EAR or \
-            eye_aspect_ratio(replacement_eyes['right']) < MINIMUM_EAR:
+    if utils.eye_aspect_ratio(replacement_eyes['left']) < utils.MINIMUM_EAR or \
+            utils.eye_aspect_ratio(replacement_eyes['right']) < utils.MINIMUM_EAR:
         raise ValueError('Source image needs to contain open eyes.')
 
     replacement_centroids = {
-        'left': centroid(replacement_eyes['left']),
-        'right': centroid(replacement_eyes['right'])
+        'left': utils.centroid(replacement_eyes['left']),
+        'right': utils.centroid(replacement_eyes['right'])
     }
     target_centroids = {
         'left': (
-            np.int32(centroid(target_eyes['left'])[0] * 0.85 + target_surrounding_coordinates['left'][1][0] * 0.15),
-            np.int32(centroid(target_eyes['left'])[1] * 0.85 + target_surrounding_coordinates['left'][1][1] * 0.15)
+            np.int32(utils.centroid(target_eyes['left'])[0] * 0.85
+                     + target_surrounding_coordinates['left'][1][0] * 0.15),
+            np.int32(utils.centroid(target_eyes['left'])[1] * 0.85
+                     + target_surrounding_coordinates['left'][1][1] * 0.15)
         ),
         'right': (
-            np.int32(centroid(target_eyes['right'])[0] * 0.85 + target_surrounding_coordinates['right'][0][0] * 0.15),
-            np.int32(centroid(target_eyes['right'])[1] * 0.85 + target_surrounding_coordinates['right'][0][1] * 0.15)
+            np.int32(utils.centroid(target_eyes['right'])[0] * 0.85
+                     + target_surrounding_coordinates['right'][0][0] * 0.15),
+            np.int32(utils.centroid(target_eyes['right'])[1] * 0.85
+                     + target_surrounding_coordinates['right'][0][1] * 0.15)
         )
     }
     left_eye_mask = create_eye_mask(
@@ -108,7 +94,7 @@ def match_face_size(source_image, target_face_landmarks, facial_landmark_predict
     @param facial_landmark_predictor: The model predicting locations of faces and facial features.
     :return: The source image resized so the face matches the size of the face in the target image.
     """
-    source_faces = FACE_DETECTOR(source_image, 1)
+    source_faces = utils.FACE_DETECTOR(source_image, 1)
     if len(source_faces) != 1:
         raise ValueError(f'Source images need to have a single face in them. Faces detected: {len(source_faces)}')
     source_face_landmarks = face_utils.shape_to_np(facial_landmark_predictor(source_image, source_faces[0]))
@@ -131,68 +117,6 @@ def match_face_size(source_image, target_face_landmarks, facial_landmark_predict
     replacement_image = imutils.rotate(replacement_image, source_angle - target_angle)
 
     return replacement_image
-
-
-def eye_aspect_ratio(eye):
-    """
-    This function calculates the eye aspect ratio (EAR) of a given eye.
-
-    @param eye: The coordinates of the eye.
-    :return: The eye aspect ratio.
-    """
-    p2_minus_p6 = dist.euclidean(eye[1], eye[5])
-    p3_minus_p5 = dist.euclidean(eye[2], eye[4])
-    p1_minus_p4 = dist.euclidean(eye[0], eye[3])
-    ear = (p2_minus_p6 + p3_minus_p5) / (2.0 * p1_minus_p4)
-    return ear
-
-
-def centroid(eye):
-    """
-    This function calculates the centroid of a given eye.
-
-    @param eye: The coordinates of the eye.
-    :return: The eye's centroid coordinates.
-    """
-    return int(sum(eye[:, 0] / len(eye[:, ]))), int(sum(eye[:, 1] / len(eye[:, ])))
-
-
-def expand_eye_coordinates(eyes_coordinates, surrounding_coordinates):
-    """
-    This function expands the coordinates of the eyes to by using the surrounding face coordinates.
-
-    @param eyes_coordinates: The coordinates of the left and right eyes.
-    @param surrounding_coordinates: The coordinates of the surrounding points.The coordinates of the surrounding points.
-    :return: The expanded coordinates of the left and right eyes.
-    """
-    left_eye_coordinates = eyes_coordinates['left']
-    right_eye_coordinates = eyes_coordinates['right']
-    left_surrounding_coordinates = surrounding_coordinates['left']
-    right_surrounding_coordinates = surrounding_coordinates['right']
-
-    diff_left_1 = np.int32((left_surrounding_coordinates[0] * 0.35 + left_eye_coordinates[1] * 0.65)
-                           - left_eye_coordinates[1])
-    diff_left_2 = np.int32((left_surrounding_coordinates[1] * 0.35 + left_eye_coordinates[2] * 0.65)
-                           - left_eye_coordinates[2])
-    diff_left_3 = np.int32((left_surrounding_coordinates[2] * 0.35 + left_eye_coordinates[0] * 0.65)
-                           - left_eye_coordinates[0])
-    diff_right_1 = np.int32((right_surrounding_coordinates[0] * 0.35 + right_eye_coordinates[0] * 0.65)
-                            - right_eye_coordinates[0])
-    diff_right_2 = np.int32((right_surrounding_coordinates[1] * 0.35 + right_eye_coordinates[1] * 0.65)
-                            - right_eye_coordinates[1])
-    diff_right_3 = np.int32((right_surrounding_coordinates[2] * 0.35 + right_eye_coordinates[2] * 0.65)
-                            - right_eye_coordinates[2])
-
-    expanded_left_eye_coordinates = [left_eye_coordinates[0] + diff_left_3, left_eye_coordinates[1] + diff_left_1,
-                                     left_eye_coordinates[2] + diff_left_2, left_eye_coordinates[3] - diff_left_3,
-                                     left_eye_coordinates[4] - diff_left_2, left_eye_coordinates[5] - diff_left_1]
-    expanded_right_eye_coordinates = [right_eye_coordinates[0] - diff_right_3, right_eye_coordinates[1] + diff_right_1,
-                                      right_eye_coordinates[2] + diff_right_2, right_eye_coordinates[3] + diff_right_3,
-                                      right_eye_coordinates[4] - diff_right_2, right_eye_coordinates[5] - diff_right_1]
-    return {
-        'left': expanded_left_eye_coordinates,
-        'right': expanded_right_eye_coordinates
-    }
 
 
 def create_eye_mask(image, eye_coordinates, eye_centroid):
