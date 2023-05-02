@@ -30,10 +30,10 @@ def main():
 
     eye_candidates = []
     for image in source_images:
-        detected_faces_and_eyes = selector.get_all_faces_and_eyes_from_image(image, facial_landmark_predictor)
+        detected_faces_and_eyes = selector.get_all_faces_and_eyes_from_image(image, facial_landmark_predictor, debug)
         eye_candidates.extend(detected_faces_and_eyes)
 
-    target_face_landmarks = selector.get_all_faces_and_eyes_from_image(target_image, facial_landmark_predictor)
+    target_face_landmarks = selector.get_all_faces_and_eyes_from_image(target_image, facial_landmark_predictor, debug)
     source_images_to_replace_with = selector.compute_replacements(target_face_landmarks, eye_candidates)
 
     blend = replacer.replace(
