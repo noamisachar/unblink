@@ -1,6 +1,6 @@
 import cv2
 
-from src import selector, replacer
+from src import selector, replacer, utils
 import argparse
 import matplotlib.pyplot as plt
 from pathlib import Path
@@ -24,7 +24,7 @@ def main():
     source_image_dir = Path(args.replacement_path)
     debug = args.debug
 
-    source_images, target_image = selector.load_images(
+    source_images, target_image = utils.load_images(
         source_image_dir, target_image_path, debug
     )
 
