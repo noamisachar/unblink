@@ -4,7 +4,7 @@ import face_recognition
 import matplotlib.pyplot as plt
 import numpy as np
 from imutils import face_utils
-import utils
+from . import utils
 
 
 # Accept an image and locate the eyes within it. Compute eye coordinates and
@@ -27,12 +27,14 @@ def get_all_faces_and_eyes_from_image(image, facial_landmark_predictor, debug):
     results = []
     for face in faces:
         cropped_image = _get_cropped_face(image, face, padding_pct=100, debug=debug)
-        face, face_landmarks, eyes = _get_eyes_from_image(cropped_image, facial_landmark_predictor)
-        if len(eyes) != 2:
-            print("Skipping bc too few eyes ", face_landmarks, eyes)
+        cropped_face, cropped_face_landmarks, cropped_eyes = _get_eyes_from_image(
+            cropped_image, facial_landmark_predictor)
+        if len(cropped_eyes) != 2:
+            print("Skipping bc too few eyes ", cropped_face_landmarks, cropped_eyes)
             continue
         face_embedding = face_recognition.face_encodings(cropped_image)
-        results.append((cropped_image, face_landmarks, face_embedding, eyes))
+        uncropped_landmarks = face_utils.shape_to_np(facial_landmark_predictor(image, face))
+        results.append((uncropped_landmarks, cropped_image, cropped_face_landmarks, face_embedding, cropped_eyes))
 
     return results
 
@@ -118,7 +120,7 @@ def _get_eyes_from_image(image, facial_landmark_predictor):
 def compute_replacements(target_faces, eye_candidates):
     source_embeddings = np.array([np.squeeze(source_embedding) for _, _, source_embedding, _ in eye_candidates])
     selected_source_faces = []
-    for _, _, target_embedding, _ in target_faces:
+    for _, _, _, target_embedding, _ in target_faces:
         res = face_recognition.api.face_distance(source_embeddings, np.squeeze(np.array(target_embedding)))
         selected_source_faces.append(eye_candidates[np.argmin(res)][0])
     return selected_source_faces
