@@ -37,7 +37,8 @@ def main():
                 eye_candidates.append(face_and_eyes)
 
     target_face_landmarks = selector.get_all_faces_and_eyes_from_image(target_image, FACIAL_LANDMARK_PREDICTOR, debug)
-    source_images_to_replace_with, source_landmarks = selector.compute_replacements(target_face_landmarks, eye_candidates)
+    source_images_to_replace_with, source_landmarks = selector.compute_replacements(
+        target_face_landmarks, eye_candidates)
 
     blend = replacer.replace(
         source_images_to_replace_with,

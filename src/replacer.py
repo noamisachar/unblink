@@ -6,43 +6,47 @@ from scipy.spatial import distance as dist
 from . import utils
 
 
-def replace(source_images, source_landmarks, target_image, target_face_landmarks, facial_landmark_predictor):
+def replace(source_images, source_faces_landmarks, target_image, target_face_landmarks, facial_landmark_predictor):
     """
     Replaces all closed eyes in the target image with the eyes from the source image.
     The source image should contain one face only, with open eyes.
 
     @param source_images: The source images containing the replacement eyes.
+    @param source_faces_landmarks: The facial landmarks of the replacement faces.
     @param target_image: The target image to replace the eyes in.
     @param target_face_landmarks: The facial landmarks of the face to replace in the target image.
     @param facial_landmark_predictor: The model predicting locations of faces and facial features.
     :return: The blended image with the replaced eyes.
     """
     print(f"Attempting to replace eyes in {len(target_face_landmarks)} faces")
-    for [target_landmark, _, _, _, eyes], source_image, source_landmark in zip(target_face_landmarks, source_images, source_landmarks):
+    for [target_landmark, _, _, _, eyes], source_image, source_landmark in zip(
+            target_face_landmarks, source_images, source_faces_landmarks):
         # If the target eyes aren't closed, then the function call is a no-op.
         if eyes[0]['EAR'] > utils.MINIMUM_EAR or eyes[1]['EAR'] > utils.MINIMUM_EAR:
             print("skipping target")
             continue
         else:
             print("replacing")
-            target_image = replace_inner(source_image, source_landmark, target_image, target_landmark, facial_landmark_predictor)
+            target_image = replace_inner(
+                source_image, source_landmark, target_image, target_landmark, facial_landmark_predictor)
     return target_image
 
 
-def replace_inner(source_image, source_landmark, target_image, target_face_landmarks, facial_landmark_predictor):
+def replace_inner(source_image, source_face_landmarks, target_image, target_face_landmarks, facial_landmark_predictor):
     """
     Replaces the eyes in the target image with the eyes from the source image.
     The source image should contain one face only, with open eyes.
 
     @param source_image: The source image containing the replacement eyes.
+    @param source_face_landmarks: The facial landmarks of the replacement face.
     @param target_image: The target image to replace the eyes in.
     @param target_face_landmarks: The facial landmarks of the face to replace in the target image.
     @param facial_landmark_predictor: The model predicting locations of faces and facial features.
     :return: The blended image with the replaced eyes.
     """
 
-    replacement_image = match_face_size(source_image=source_image, source_landmark=source_landmark, target_face_landmarks=target_face_landmarks,
-                                        facial_landmark_predictor=facial_landmark_predictor)
+    replacement_image = match_face_size(source_image=source_image, source_face_landmarks=source_face_landmarks,
+                                        target_face_landmarks=target_face_landmarks)
     replacement_face = utils.FACE_DETECTOR(replacement_image, 1)[0]
     replacement_face_landmarks = face_utils.shape_to_np(facial_landmark_predictor(replacement_image, replacement_face))
     replacement_eyes, replacement_surrounding_coordinates = utils.get_eyes_and_surrounding_coordinates(
@@ -85,17 +89,17 @@ def replace_inner(source_image, source_landmark, target_image, target_face_landm
     return blended_image
 
 
-def match_face_size(source_image, source_landmark, target_face_landmarks, facial_landmark_predictor):
+def match_face_size(source_image, source_face_landmarks, target_face_landmarks):
     """
     This function matches the size of the face in the source image to the size of the face in the target image
     and returns the resized source image.
 
     @param source_image: The source image containing the replacement eyes.
+    @param source_face_landmarks: The facial landmarks of the replacement face.
     @param target_face_landmarks: The facial landmarks of the face to replace in the target image.
-    @param facial_landmark_predictor: The model predicting locations of faces and facial features.
     :return: The source image resized so the face matches the size of the face in the target image.
     """
-    source_face_landmarks = source_landmark
+    source_face_landmarks = source_face_landmarks
     source_alignment_points = [source_face_landmarks[0], source_face_landmarks[16]]
     target_alignment_points = [target_face_landmarks[0], target_face_landmarks[16]]
 

@@ -105,17 +105,17 @@ def expand_eye_coordinates(eyes_coordinates, surrounding_coordinates):
     left_surrounding_coordinates = surrounding_coordinates['left']
     right_surrounding_coordinates = surrounding_coordinates['right']
 
-    diff_left_1 = np.int32((left_surrounding_coordinates[0] * 0.35 + left_eye_coordinates[1] * 0.65)
+    diff_left_1 = np.int32((left_surrounding_coordinates[0] * 0.4 + left_eye_coordinates[1] * 0.6)
                            - left_eye_coordinates[1])
-    diff_left_2 = np.int32((left_surrounding_coordinates[1] * 0.35 + left_eye_coordinates[2] * 0.65)
+    diff_left_2 = np.int32((left_surrounding_coordinates[1] * 0.4 + left_eye_coordinates[2] * 0.6)
                            - left_eye_coordinates[2])
-    diff_left_3 = np.int32((left_surrounding_coordinates[2] * 0.35 + left_eye_coordinates[0] * 0.65)
+    diff_left_3 = np.int32((left_surrounding_coordinates[2] * 0.4 + left_eye_coordinates[0] * 0.6)
                            - left_eye_coordinates[0])
-    diff_right_1 = np.int32((right_surrounding_coordinates[0] * 0.35 + right_eye_coordinates[0] * 0.65)
+    diff_right_1 = np.int32((right_surrounding_coordinates[0] * 0.4 + right_eye_coordinates[0] * 0.6)
                             - right_eye_coordinates[0])
-    diff_right_2 = np.int32((right_surrounding_coordinates[1] * 0.35 + right_eye_coordinates[1] * 0.65)
+    diff_right_2 = np.int32((right_surrounding_coordinates[1] * 0.4 + right_eye_coordinates[1] * 0.6)
                             - right_eye_coordinates[1])
-    diff_right_3 = np.int32((right_surrounding_coordinates[2] * 0.35 + right_eye_coordinates[2] * 0.65)
+    diff_right_3 = np.int32((right_surrounding_coordinates[2] * 0.4 + right_eye_coordinates[2] * 0.6)
                             - right_eye_coordinates[2])
 
     expanded_left_eye_coordinates = [left_eye_coordinates[0] + diff_left_3, left_eye_coordinates[1] + diff_left_1,
