@@ -1,10 +1,10 @@
 import cv2
-
-from src import selector, replacer, utils
 import argparse
 import matplotlib.pyplot as plt
 from pathlib import Path
 import dlib
+
+from src import selector, replacer, utils
 
 
 FACIAL_LANDMARK_PREDICTOR_PATH = "models/shape_predictor.dat"
