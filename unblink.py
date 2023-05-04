@@ -3,7 +3,6 @@ import argparse
 import matplotlib.pyplot as plt
 from pathlib import Path
 import dlib
-
 from src import selector, replacer, utils
 
 
@@ -33,7 +32,7 @@ def main():
     for image in source_images:
         detected_faces_and_eyes = selector.get_all_faces_and_eyes_from_image(image, FACIAL_LANDMARK_PREDICTOR, debug)
         for face_and_eyes in detected_faces_and_eyes:
-            if face_and_eyes[4][0]['EAR'] > utils.MINIMUM_EAR and face_and_eyes[4][1]['EAR'] > utils.MINIMUM_EAR:
+            if face_and_eyes[3][0]["status"] == "open" and face_and_eyes[3][1]["status"] == "open":
                 eye_candidates.append(face_and_eyes)
 
     target_face_landmarks = selector.get_all_faces_and_eyes_from_image(target_image, FACIAL_LANDMARK_PREDICTOR, debug)

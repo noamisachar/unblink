@@ -4,7 +4,6 @@ import face_recognition
 import matplotlib.pyplot as plt
 import numpy as np
 from imutils import face_utils
-
 from . import utils
 
 
@@ -25,7 +24,7 @@ def get_all_faces_and_eyes_from_image(image, facial_landmark_predictor, debug):
     # Crop to each face separately.
     results = []
     for face in faces:
-        cropped_image = _get_cropped_face(image, face, padding_pct=15, debug=debug)
+        cropped_image = _get_cropped_image(image, face, padding_pct=15, debug=debug)
         cropped_face, cropped_face_landmarks, cropped_eyes = _get_eyes_from_image(
             cropped_image, facial_landmark_predictor)
         if len(cropped_eyes) != 2:
@@ -33,12 +32,12 @@ def get_all_faces_and_eyes_from_image(image, facial_landmark_predictor, debug):
             continue
         face_embedding = face_recognition.face_encodings(cropped_image)[0]
         uncropped_landmarks = face_utils.shape_to_np(facial_landmark_predictor(image, face))
-        results.append((uncropped_landmarks, cropped_image, cropped_face_landmarks, face_embedding, cropped_eyes))
+        results.append((uncropped_landmarks, cropped_image, face_embedding, cropped_eyes))
 
     return results
 
 
-def _get_cropped_face(image, face_rect, padding_pct=50, debug=False):
+def _get_cropped_image(image, face_rect, padding_pct=50, debug=False):
     """
     This function takes an image and a rectangular bounding box representing a face in the image,
     and returns a cropped image of the face with some padding around the edges.
@@ -57,8 +56,8 @@ def _get_cropped_face(image, face_rect, padding_pct=50, debug=False):
     y_min = max(0, y - padding)
     y_max = min(y + h + padding, image.shape[0])
 
-    # Copy the array to a new image, as numpy <> dlib's interaction does not work
-    # well with slices
+    # Copy the array to a new image, as numpy <> dlib's interaction does not
+    # work well with slices.
     cropped_image = image[y_min:y_max, x_min:x_max, :].copy()
 
     if debug:
@@ -135,18 +134,18 @@ def compute_replacements(target_faces, eye_candidates):
     for each target face by minimizing the Euclidean distance between face embeddings.
 
     @param target_faces: A list of tuples representing the target faces.
-    Each tuple contains the uncropped facial landmarks, the cropped face image, the cropped facial landmarks,
+    Each tuple contains the uncropped facial landmarks, the cropped face image,
     the facial embedding and the cropped eyes coordinates for a single target face.
     @param eye_candidates: A list of tuples representing the source faces.
-    Each tuple contains the uncropped facial landmarks, the cropped face image, the cropped facial landmarks,
+    Each tuple contains the uncropped facial landmarks, the cropped face image,
     the facial embedding and the cropped eyes coordinates for a single source face.
     :return: A tuple containing two lists. The first list contains the cropped source face images that best match each
     target face, and the second list contains the uncropped facial landmarks for each of those source faces.
     """
-    source_embeddings = np.array([np.squeeze(source_embedding) for _, _, _, source_embedding, _ in eye_candidates])
+    source_embeddings = np.array([np.squeeze(source_embedding) for _, _, source_embedding, _ in eye_candidates])
     selected_source_faces = []
     source_landmarks = []
-    for _, _, _, target_embedding, _ in target_faces:
+    for _, _, target_embedding, _ in target_faces:
         res = face_recognition.api.face_distance(source_embeddings, np.squeeze(np.array(target_embedding)))
         selected_source_faces.append(eye_candidates[np.argmin(res)][1])
         source_landmarks.append(eye_candidates[np.argmin(res)][0])
