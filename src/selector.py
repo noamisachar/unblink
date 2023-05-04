@@ -7,13 +7,20 @@ from imutils import face_utils
 from . import utils
 
 
-# Accept an image and locate the eyes within it. Compute eye coordinates and
-# classify each eye as open or closed. Return two objects for every detected
-# face: the left eye and the right eye.
 def get_all_faces_and_eyes_from_image(image, facial_landmark_predictor, debug):
+    """
+    This function accept an image and locate the eyes within it, computes eye coordinates and
+    classifies each eye as open or closed.
+
+    @param image: An input image.
+    @param facial_landmark_predictor: A facial landmark predictor object that can detect facial landmarks in the image.
+    @param debug: A boolean indicating whether to print debug information.
+    :return: A list of tuples, where each tuple contains the facial landmarks, cropped image, cropped face landmarks,
+    face embedding, and cropped eyes for a detected face.
+    """
     faces = utils.FACE_DETECTOR(image, 1)
-    print("faces in get_all_faces_and_eyes_from_image ", len(faces))
- 
+    print("number of faces in get_all_faces_and_eyes_from_image ", len(faces))
+
     # Crop to each face separately.
     results = []
     for face in faces:
@@ -30,8 +37,17 @@ def get_all_faces_and_eyes_from_image(image, facial_landmark_predictor, debug):
     return results
 
 
-# Crop the image to include just the provided rectangle, along with some padding
 def _get_cropped_face(image, face_rect, padding_pct=50, debug=False):
+    """
+    This function takes an image and a rectangular bounding box representing a face in the image,
+    and returns a cropped image of the face with some padding around the edges.
+
+    @param image: The input image.
+    @param face_rect: A rectangular bounding box representing the face to be cropped.
+    @param padding_pct: The percentage of padding to add around the edges of the face.
+    @param debug: A boolean indicating whether to print debug information.
+    :return: A cropped image of the face with padding around the edges.
+    """
     x, y, w, h = face_utils.rect_to_bb(face_rect)
     padding = math.floor((padding_pct / 100) * max(w, h))
 
@@ -66,10 +82,15 @@ def _get_cropped_face(image, face_rect, padding_pct=50, debug=False):
     return cropped_image
 
 
-# Accept an image and locate the eyes within it. Compute eye coordinates and
-# classify each eye as open or closed. Return two objects: the left eye and the
-# right eye.
 def _get_eyes_from_image(image, facial_landmark_predictor):
+    """
+    This function accepts an image and locates the eyes within it. Computes eye coordinates and
+    classifies each eye as open or closed.
+
+    @param image: The input image.
+    @param facial_landmark_predictor: A facial landmark predictor object that can detect facial landmarks in the image.
+    :return: The face object, the face landmarks, and eye information.
+    """
     faces = utils.FACE_DETECTOR(image, 1)
     face = None
     if len(faces) >= 1:
@@ -107,8 +128,20 @@ def _get_eyes_from_image(image, facial_landmark_predictor):
     return face, face_landmarks, (left_eye, right_eye)
 
 
-# Identify the source face which is most similar to the provided target faces
 def compute_replacements(target_faces, eye_candidates):
+    """
+    This function takes a list of target faces and a list of eye candidates and computes the best replacement eyes
+    for each target face by minimizing the Euclidean distance between face embeddings.
+
+    @param target_faces: A list of tuples representing the target faces.
+    Each tuple contains the uncropped facial landmarks, the cropped face image, the cropped facial landmarks,
+    the facial embedding and the cropped eyes coordinates for a single target face.
+    @param eye_candidates: A list of tuples representing the source faces.
+    Each tuple contains the uncropped facial landmarks, the cropped face image, the cropped facial landmarks,
+    the facial embedding and the cropped eyes coordinates for a single source face.
+    :return: A tuple containing two lists. The first list contains the cropped source face images that best match each
+    target face, and the second list contains the uncropped facial landmarks for each of those source faces.
+    """
     source_embeddings = np.array([np.squeeze(source_embedding) for _, _, _, source_embedding, _ in eye_candidates])
     selected_source_faces = []
     source_landmarks = []

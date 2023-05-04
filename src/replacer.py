@@ -27,12 +27,12 @@ def replace(source_images, source_faces_landmarks, target_image, target_face_lan
             continue
         else:
             print("replacing")
-            target_image = replace_inner(
+            target_image = _replace_inner(
                 source_image, source_landmark, target_image, target_landmark, facial_landmark_predictor)
     return target_image
 
 
-def replace_inner(source_image, source_face_landmarks, target_image, target_face_landmarks, facial_landmark_predictor):
+def _replace_inner(source_image, source_face_landmarks, target_image, target_face_landmarks, facial_landmark_predictor):
     """
     Replaces the eyes in the target image with the eyes from the source image.
     The source image should contain one face only, with open eyes.
@@ -45,8 +45,8 @@ def replace_inner(source_image, source_face_landmarks, target_image, target_face
     :return: The blended image with the replaced eyes.
     """
 
-    replacement_image = match_face_size(source_image=source_image, source_face_landmarks=source_face_landmarks,
-                                        target_face_landmarks=target_face_landmarks)
+    replacement_image = _match_face_size(source_image=source_image, source_face_landmarks=source_face_landmarks,
+                                         target_face_landmarks=target_face_landmarks)
     replacement_face = utils.FACE_DETECTOR(replacement_image, 1)[0]
     replacement_face_landmarks = face_utils.shape_to_np(facial_landmark_predictor(replacement_image, replacement_face))
     replacement_eyes, replacement_surrounding_coordinates = utils.get_eyes_and_surrounding_coordinates(
@@ -78,9 +78,9 @@ def replace_inner(source_image, source_face_landmarks, target_image, target_face
                      + target_surrounding_coordinates['right'][0][1] * 0.15)
         )
     }
-    left_eye_mask = create_eye_mask(
+    left_eye_mask = _create_eye_mask(
         replacement_image, expanded_replacement_eyes['left'], replacement_centroids['left'])
-    right_eye_mask = create_eye_mask(
+    right_eye_mask = _create_eye_mask(
         replacement_image, expanded_replacement_eyes['right'], replacement_centroids['right'])
     blended_image = cv2.seamlessClone(
         replacement_image, target_image, left_eye_mask, target_centroids['left'], cv2.NORMAL_CLONE)
@@ -89,7 +89,7 @@ def replace_inner(source_image, source_face_landmarks, target_image, target_face
     return blended_image
 
 
-def match_face_size(source_image, source_face_landmarks, target_face_landmarks):
+def _match_face_size(source_image, source_face_landmarks, target_face_landmarks):
     """
     This function matches the size of the face in the source image to the size of the face in the target image
     and returns the resized source image.
@@ -121,7 +121,7 @@ def match_face_size(source_image, source_face_landmarks, target_face_landmarks):
     return replacement_image
 
 
-def create_eye_mask(image, eye_coordinates, eye_centroid):
+def _create_eye_mask(image, eye_coordinates, eye_centroid):
     """
     This function creates a mask which includes only the eye received.
 
