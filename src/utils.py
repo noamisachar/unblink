@@ -94,7 +94,7 @@ def get_eyes_and_surrounding_coordinates(face_landmarks):
 
 def expand_eye_coordinates(eyes_coordinates, surrounding_coordinates):
     """
-    This function expands the coordinates of the eyes to by using the surrounding face coordinates.
+    This function expands the coordinates of the eyes by using the surrounding face coordinates.
 
     @param eyes_coordinates: The coordinates of the left and right eyes.
     @param surrounding_coordinates: The coordinates of the surrounding points.The coordinates of the surrounding points.

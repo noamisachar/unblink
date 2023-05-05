@@ -3,7 +3,6 @@ import imutils
 import numpy as np
 from imutils import face_utils
 from scipy.spatial import distance as dist
-
 from . import utils
 
 
@@ -20,10 +19,10 @@ def replace(source_images, source_faces_landmarks, target_image, target_face_lan
     :return: The blended image with the replaced eyes.
     """
     print(f"Attempting to replace eyes in {len(target_face_landmarks)} faces")
-    for [target_landmark, _, _, _, eyes], source_image, source_landmark in zip(
+    for [target_landmark, _, _, eyes], source_image, source_landmark in zip(
             target_face_landmarks, source_images, source_faces_landmarks):
         # If the target eyes aren't closed, then the function call is a no-op.
-        if eyes[0]['EAR'] > utils.MINIMUM_EAR or eyes[1]['EAR'] > utils.MINIMUM_EAR:
+        if eyes[0]['status'] == "open" or eyes[1]['status'] == "open":
             print("skipping target")
             continue
         else:
@@ -100,7 +99,6 @@ def _match_face_size(source_image, source_face_landmarks, target_face_landmarks)
     @param target_face_landmarks: The facial landmarks of the face to replace in the target image.
     :return: The source image resized so the face matches the size of the face in the target image.
     """
-    source_face_landmarks = source_face_landmarks
     source_alignment_points = [source_face_landmarks[0], source_face_landmarks[16]]
     target_alignment_points = [target_face_landmarks[0], target_face_landmarks[16]]
 
