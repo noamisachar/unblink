@@ -91,8 +91,8 @@ def _replace_inner(source_image, source_face_landmarks, target_image, target_fac
 
 def _match_face_size(source_image, source_face_landmarks, target_face_landmarks):
     """
-    This function matches the size of the face in the source image to the size of the face in the target image
-    and returns the resized source image.
+    This function matches the size and angle of the face in the source image to the those of the face in the target
+    image and returns the resized and rotated source image.
 
     @param source_image: The source image containing the replacement eyes.
     @param source_face_landmarks: The facial landmarks of the replacement face.

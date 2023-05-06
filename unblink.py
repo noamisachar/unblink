@@ -14,7 +14,7 @@ parser = argparse.ArgumentParser(description="unblink: replace closed eyes in im
 parser.add_argument("--target-path", "-t", help="Image in which to replace closed eyes",
                     required=True)
 parser.add_argument("--replacement-path", "-r", help="Folder with images to use as eye sources",
-                    default="example/open")
+                    default="example/open", required=True)
 parser.add_argument("--debug", "-d", help="Enable debug output", action=argparse.BooleanOptionalAction)
 
 
